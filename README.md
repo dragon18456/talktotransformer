@@ -1,4 +1,4 @@
-# talktotransformer
+# Talk to Transformer
 
 Final Project for Berkeley CS 194-080: Full Stack Deep Learning
 
