@@ -91,7 +91,7 @@ def get_current_response():
     data = request.get_json()
     print(data)
     data = data['sentence']
-    response = generator(data, max_length=100, num_return_sequences=1)
+    response = generator(data, max_length=1000, num_return_sequences=1)
     print(response)
     return {'string': response[0]['generated_text']}
 

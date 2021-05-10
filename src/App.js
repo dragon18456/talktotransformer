@@ -129,9 +129,8 @@ function App() {
 
         mediaRecorder.onstop = async function () {
           console.log("stopped");
-
-          const url = URL.createObjectURL(chunks.current[0]);
-          const blob = chunks.current
+          const blob = new Blob(chunks.current)
+          const url = URL.createObjectURL(blob);
           chunks.current = [];
 
           setRecording({
@@ -153,12 +152,6 @@ function App() {
         setStream({ ...stream, error });
       });
   }
-
-  /*const ImageContainer = ({imageUrl}) => {
-    return (
-      <img src={imageUrl} style = {imgStyle}></img>
-    );
-  };*/
 
   function NewlineText(props) {
     const text = props.text;
@@ -182,35 +175,36 @@ function App() {
       <NewlineText text={data} />
       {start ? (
         <>
-          <h2> Your order </h2>
+          <h2> Type your input below or Say them below </h2>
           <p>
             <TextareaAutosize style={{ minWidth: 400 }} rows={3} autoFocus type="text" id="textbox" />
           </p>
           <button onClick={languageModel}> Talk to Transformer</button>
           <button onClick={clear}> Clear </button>
+          <h2>Record Something to tell the Transformer!</h2>
+          {stream.access ? (
+            <div className="audio-container">
+              <p>
+                <button
+                  className={recording.active ? "active" : null}
+                  onClick={() => !recording.active && stream.recorder.start(100)}
+                >
+                  Start Recording
+            </button>
+                <button onClick={stopRecording}>Stop Recording</button>
+                <button id="asr" onClick={asr}>Asr</button>
+              </p>
+              {recording.available && <audio controls src={recording.url} />}
+
+            </div>
+          ) : (
+            <button onClick={getAccess}>Get Mic Access</button>
+          )}
         </>
       ) : (
         <button onClick={startDemo}>Start Talking to a Transformer</button>
       )}
-      <h2>Record Something to tell the Transformer!</h2>
-      {stream.access ? (
-        <div className="audio-container">
-          <p>
-            <button
-              className={recording.active ? "active" : null}
-              onClick={() => !recording.active && stream.recorder.start()}
-            >
-              Start Recording
-          </button>
-            <button onClick={stopRecording}>Stop Recording</button>
-            <button id="asr" onClick={asr}>Asr</button>
-          </p>
-          {recording.available && <audio controls src={recording.url} />}
 
-        </div>
-      ) : (
-        <button onClick={getAccess}>Get Mic Access</button>
-      )}
     </div>
   );
 }
