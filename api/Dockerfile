@@ -20,4 +20,4 @@ RUN cd TTS && git checkout b1935c97 && pip install -r requirements.txt && python
 
 EXPOSE 5000
 COPY . .
-CMD ["gunicorn", "wsgi:app", "-w 2", "-b 0.0.0.0:5000", "-t 500"]
+CMD ["gunicorn", "wsgi:app", "-t 500"]
