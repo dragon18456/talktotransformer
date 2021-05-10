@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import './App.css';
+import logo from './logo.png'
 
 
 const imgStyle = {
@@ -21,7 +22,7 @@ function App() {
 
   useEffect(() => {
     fetch('/api/image/?filename=logo').then(res => {
-      setImage(res.url)
+      setImage(logo)
     });
   }, []);
 
@@ -174,7 +175,7 @@ function App() {
   return (
     <div className="App">
       <h1>Talk to a Transformer</h1>
-      <img src={image} style={imgStyle} ></img>
+      <img src={logo} style={imgStyle} ></img>
       <NewlineText text={data} />
       {start ? (
         <>
