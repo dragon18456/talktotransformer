@@ -102,6 +102,12 @@ print("Import everything!")
 app = Flask(__name__)
 
 
+# NOTE: This route is needed for the default EB health check route
+@app.route('/')
+def home():
+    return "ok"
+
+
 @app.route('/api/image/', methods=['GET'])
 def get_img():
     filename = request.args.get('filename')
