@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { isCompositeComponent } from 'react-dom/test-utils';
 import TextareaAutosize from 'react-textarea-autosize';
 import './App.css';
 
@@ -26,13 +27,14 @@ function App() {
   }, []);
 
   async function startDemo() {
-    //tts(instructions)
+    tts(instructions)
     setStart(true)
     setData(instructions)
   }
 
   function tts(sentence) {
     fetch('/api/tts?sentence=' + sentence).then(res => {
+      console.log(res.url)
       audioElement.src = res.url
       audioElement.play()
     });
@@ -51,7 +53,7 @@ function App() {
     const str = dat.string
     setData(str)
 
-    //tts(str)
+    tts(str)
   }
 
   async function asr(val) {
