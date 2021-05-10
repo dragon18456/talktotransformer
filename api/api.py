@@ -194,8 +194,15 @@ def get_tts():
 def get_current_response():
     data = request.get_json()
     print(data)
-    data = data['sentence']
-    response = generator(data, max_length=100, num_return_sequences=1)
+    sentence = data['sentence']
+    max_length = data['max_length']
+    if not max_length:
+        max_length = 100
+    if max_length.isnumeric():
+        max_length = int(max_length)
+    if max_length > 1000:
+        max_length = 1000
+    response = generator(sentence, max_length=max_length, num_return_sequences=1)
     print(response)
     return {'string': response[0]['generated_text']}
 

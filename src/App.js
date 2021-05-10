@@ -58,10 +58,11 @@ function App() {
 
   async function languageModel(val) {
     const input = document.getElementById("textbox").value
+    const max_length = document.getElementById("max_length").value
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sentence: input })
+      body: JSON.stringify({ sentence: input , max_length: max_length})
     };
     setData("loading...")
     const response = await fetch('/api/transformer', requestOptions)
@@ -178,8 +179,9 @@ function App() {
         <>
           <h2> Type your input below or Say them below </h2>
           <p>
-            <TextareaAutosize style={{ minWidth: 400 }} rows={3} autoFocus type="text" id="textbox" />
+            <TextareaAutosize style={{ minWidth: 400 }} rows={3} autoFocus type="text" id="textbox" /> 
           </p>
+          <input type="number" id="max_length"></input>
           <button onClick={languageModel}> Talk to Transformer</button>
           <button onClick={clear}> Clear </button>
           <h2>Record Something to tell the Transformer!</h2>
