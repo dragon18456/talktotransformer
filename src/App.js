@@ -15,7 +15,7 @@ function App() {
   const [data, setData] = useState("");
   const [image, setImage] = useState(null);
   const [start, setStart] = useState(false);
-  
+
   let audioElement = document.createElement('audio');
   audioElement.setAttribute('controls', true);
 
@@ -160,16 +160,31 @@ function App() {
     );
   };*/
 
+  function NewlineText(props) {
+    const text = props.text;
+    const newText = text.split('\n').map(str => <p>{str}</p>);
+    return newText;
+  }
+
+  async function stopRecording() {
+    if (recording.active) {
+      await delay(1000)
+      stream.recorder.stop()
+    }
+  }
+
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+
   return (
     <div className="App">
       <h1>Talk to a Transformer</h1>
       <img src={image} style={imgStyle} ></img>
-      <div> {data} </div>
+      <NewlineText text={data} />
       {start ? (
         <>
           <h2> Your order </h2>
           <p>
-            <TextareaAutosize style={{ minWidth: 400}} rows={3} autoFocus type="text" id="textbox" />
+            <TextareaAutosize style={{ minWidth: 400 }} rows={3} autoFocus type="text" id="textbox" />
           </p>
           <button onClick={languageModel}> Talk to Transformer</button>
           <button onClick={clear}> Clear </button>
@@ -178,7 +193,7 @@ function App() {
         <button onClick={startDemo}>Start Talking to a Transformer</button>
       )}
       <h2>Record Something to tell the Transformer!</h2>
-        {stream.access ? (
+      {stream.access ? (
         <div className="audio-container">
           <p>
             <button
@@ -187,7 +202,7 @@ function App() {
             >
               Start Recording
           </button>
-            <button onClick={() => recording.active && stream.recorder.stop()}>Stop Recording</button>
+            <button onClick={stopRecording}>Stop Recording</button>
             <button id="asr" onClick={asr}>Asr</button>
           </p>
           {recording.available && <audio controls src={recording.url} />}
