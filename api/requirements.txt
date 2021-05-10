@@ -86,7 +86,6 @@ torch==1.8.1
 tornado==6.1
 tqdm==4.60.0
 transformers==4.5.1
-TTS==0.0.3+b1935c9
 typing-extensions==3.7.4.3
 umap-learn==0.4.6
 Unidecode==0.4.20
