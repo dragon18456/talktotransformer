@@ -1,6 +1,6 @@
 FROM python:3.8-buster
 WORKDIR /api
-COPY ./api/requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 RUN gdown --id 1dntzjWFg7ufWaTaFy80nRz-Tu02xWZos -O tts_model.pth.tar
