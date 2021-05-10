@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
-import io from 'socket.io-client';
 import './App.css';
 
 
@@ -40,29 +39,13 @@ function App() {
     });
   }
 
-  const socketio = io('http://127.0.0.1:5000', {transports: ['websocket'], upgrade: false});
-  
-  const socket = socketio.on('connect', function () {
-    console.log("Trying to connect to backend")
-  });
-
-  socket.on('after connect', function (msg) {
-    console.log(msg.data)
-  });
-
-  socket.on('asr', function (msg) {
-    document.getElementById("textbox").value = msg
-  });
-
-
-
   async function languageModel(val) {
     const input = document.getElementById("textbox").value
     const max_length = document.getElementById("max_length").value
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sentence: input , max_length: max_length})
+      body: JSON.stringify({ sentence: input, max_length: max_length })
     };
     setData("loading...")
     const response = await fetch('/api/transformer', requestOptions)
@@ -71,6 +54,26 @@ function App() {
     setData(str)
 
     tts(str)
+  }
+
+
+  async function asr(val) {
+    let blob = recording.blob
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onload = () => {
+      let base64data = reader.result.split(',')[1];
+      //console.log(reader.result)
+      fetch('/api/asr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: base64data })
+      }).then(res => res.json()).then(data => {
+        console.log(data)
+        document.getElementById("textbox").value = data.string
+      });
+    };
+
   }
 
   async function clear(val) {
@@ -123,15 +126,14 @@ function App() {
         };
 
         mediaRecorder.ondataavailable = function (e) {
-          console.log("data available");
           chunks.current.push(e.data);
-          socketio.emit('stream', e.data)
         };
 
         mediaRecorder.onstop = async function () {
           console.log("stopped");
+          
+          const url = URL.createObjectURL(chunks.current[0]);
           const blob = new Blob(chunks.current)
-          const url = URL.createObjectURL(blob);
           chunks.current = [];
 
           setRecording({
@@ -140,7 +142,6 @@ function App() {
             url,
             blob
           });
-          socketio.emit('stopStream')
         };
 
         setStream({
@@ -179,9 +180,12 @@ function App() {
         <>
           <h2> Type your input below or Say them below </h2>
           <p>
-            <TextareaAutosize style={{ minWidth: 400 }} rows={3} autoFocus type="text" id="textbox" /> 
+            <TextareaAutosize style={{ minWidth: 400 }} rows={3} autoFocus type="text" id="textbox" />
           </p>
-          <input type="number" id="max_length"></input>
+          <p>Type the length that you would like your response to be</p>
+          <p>Press Talk To Transformer to see how it responds!</p>
+          <p>Note that the Audio Generation is pretty slow.</p>
+          <input type="number" style={{ width: 50 }} id="max_length"></input>
           <button onClick={languageModel}> Talk to Transformer</button>
           <button onClick={clear}> Clear </button>
           <h2>Record Something to tell the Transformer!</h2>
@@ -190,11 +194,13 @@ function App() {
               <p>
                 <button
                   className={recording.active ? "active" : null}
-                  onClick={() => !recording.active && stream.recorder.start(100)}
+                  onClick={() => !recording.active && stream.recorder.start()}
                 >
                   Start Recording
             </button>
                 <button onClick={stopRecording}>Stop Recording</button>
+                <button onClick={asr}>asr</button>
+
               </p>
               {recording.available && <audio controls src={recording.url} />}
 
