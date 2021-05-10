@@ -8,6 +8,7 @@ import json
 import base64
 import numpy as np
 from scipy.io.wavfile import write
+import subprocess
 
 import os
 import time
@@ -20,7 +21,7 @@ from TTS.utils.synthesis import synthesis
 
 generator = pipeline('text-generation', model='gpt2')
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
+asr_model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
 
 print("Imported gpt and wav2vec2")
 
@@ -100,30 +101,77 @@ print("Import everything!")
 
 app = Flask(__name__)
 
-@app.route('/api/image/', methods=['GET'])
-def get_img():
-    filename = request.args.get('filename')
-    return send_file("images/" + filename + ".png", mimetype='image/png')
+from flask_socketio import SocketIO, emit
+import eventlet
+eventlet.monkey_patch()
+
+socketio = SocketIO(app, cors_allowed_origins="*", async_handlers=True)
+
+app.config['SECRET_KEY'] = 'secret!'
+
+@socketio.on('connect')
+def test_connect():
+    print("Connected")
+    emit('after connect',  {'data':'Lets dance'})
+
+class StreamData:
+
+    def __init__(self):
+        self.data = []
+    
+    def append(self, dat):
+        self.data.append(dat)
+
+    def empty(self):
+        self.data = []
+
+    def getData(self):
+        return b''.join(self.data)
+
+streamData = StreamData()
 
 
-@app.route('/api/asr', methods=['POST'])
-def get_asr():
-    content = request.get_json()
-    ans = base64.b64decode(bytes(content["message"], 'utf-8'))
+@socketio.on('stream')
+def stream(data):
+    print("Got data")
+    streamData.append(data)
 
-    with open("temp.wav", "wb") as fh:
+
+@socketio.on('stopStream')
+def stopstream():
+    ans = streamData.getData()
+    raw_filename = './audio/asr_input.raw'
+    wav_filename = './audio/asr_input.wav'
+
+    if os.path.exists(raw_filename):
+        os.remove(raw_filename)
+
+    with open(raw_filename, "wb") as fh:
         fh.write(ans)
 
-    audio_input, rate = librosa.load("temp.wav", sr=16000)
+    if os.path.exists(wav_filename):
+        os.remove(wav_filename)
+
+    subprocess.call(['ffmpeg', '-i', raw_filename,
+                   wav_filename])
+
+    audio_input, rate = librosa.load(wav_filename, sr=16000)
     # transcribe
     input_values = processor(audio_input, return_tensors="pt").input_values
-    logits = model(input_values).logits
+    logits = asr_model(input_values).logits
     predicted_ids = torch.argmax(logits, dim=-1)
     transcription = processor.batch_decode(predicted_ids)[0].capitalize()
 
     print("The transcription was:", transcription)
+    streamData.empty()
+    emit('asr', transcription)
 
-    return {'string': transcription}
+
+
+@app.route('/api/image/', methods=['GET'])
+def get_img():
+    filename = request.args.get('filename')
+    return send_file("images/" + filename + ".png", mimetype='image/png')
 
 
 @app.route('/api/tts', methods=['GET'])
@@ -147,9 +195,13 @@ def get_current_response():
     data = request.get_json()
     print(data)
     data = data['sentence']
-    response = generator(data, max_length=1000, num_return_sequences=1)
+    response = generator(data, max_length=100, num_return_sequences=1)
     print(response)
     return {'string': response[0]['generated_text']}
 
 
 print("Server Started!")
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
+    #app.run(debug=True)

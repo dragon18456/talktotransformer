@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { isCompositeComponent } from 'react-dom/test-utils';
 import TextareaAutosize from 'react-textarea-autosize';
+import io from 'socket.io-client';
 import './App.css';
 
 
@@ -40,6 +40,22 @@ function App() {
     });
   }
 
+  const socketio = io('http://127.0.0.1:5000', {transports: ['websocket'], upgrade: false});
+  
+  const socket = socketio.on('connect', function () {
+    console.log("Trying to connect to backend")
+  });
+
+  socket.on('after connect', function (msg) {
+    console.log(msg.data)
+  });
+
+  socket.on('asr', function (msg) {
+    document.getElementById("textbox").value = msg
+  });
+
+
+
   async function languageModel(val) {
     const input = document.getElementById("textbox").value
     const requestOptions = {
@@ -56,29 +72,10 @@ function App() {
     tts(str)
   }
 
-  async function asr(val) {
-    if (recording.available) {
-      let blob = new Blob(recording.blob, { type: 'audio/wav' });
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onload = () => {
-        let base64data = reader.result.split(',')[1];
-        //console.log(reader.result)
-        fetch('/api/asr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: base64data })
-        }).then(res => res.json()).then(data => {
-          console.log(data)
-          document.getElementById("textbox").value = data.string
-        });
-      };
-    }
-  }
-
   async function clear(val) {
     document.getElementById("textbox").value = ''
     setData(instructions)
+    tts(instructions)
   }
 
   //code reference here: https://codesandbox.io/s/audio-experiments-w7yz8?file=/src/App.js:417-422
@@ -127,6 +124,7 @@ function App() {
         mediaRecorder.ondataavailable = function (e) {
           console.log("data available");
           chunks.current.push(e.data);
+          socketio.emit('stream', e.data)
         };
 
         mediaRecorder.onstop = async function () {
@@ -141,6 +139,7 @@ function App() {
             url,
             blob
           });
+          socketio.emit('stopStream')
         };
 
         setStream({
@@ -163,7 +162,7 @@ function App() {
 
   async function stopRecording() {
     if (recording.active) {
-      await delay(1000)
+      await delay(500)
       stream.recorder.stop()
     }
   }
@@ -194,7 +193,6 @@ function App() {
                   Start Recording
             </button>
                 <button onClick={stopRecording}>Stop Recording</button>
-                <button id="asr" onClick={asr}>Asr</button>
               </p>
               {recording.available && <audio controls src={recording.url} />}
 
